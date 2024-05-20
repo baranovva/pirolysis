@@ -8,7 +8,8 @@ class Models:
     def __init__(self, data: pd.DataFrame, heating_rate: float):
         self.data = data
         self.heating_rate = heating_rate
-        self.coefs = []
+        self.coefs = None
+        self.Delta_q = 0
     def reaction_rate_model(self, params, T, HRR, Delta_q):
         A, logEa, n, m, alpha_zv = params
         Ea = np.exp(logEa)
@@ -28,8 +29,8 @@ class Models:
         beta = self.heating_rate
         
         self.data['Temperature (K)'] = self.data['Temperature (C)'] + 273.15
-        Delta_q = np.trapz(self.data['HRR (W/g)'] / beta, self.data['Temperature (K)'])
-        self.data['Alpha'] = (1/beta) * cumtrapz(self.data['HRR (W/g)'], self.data['Temperature (K)'], initial=0) / Delta_q
+        self.Delta_q = np.trapz(self.data['HRR (W/g)'] / beta, self.data['Temperature (K)'])
+        self.data['Alpha'] = (1/beta) * cumtrapz(self.data['HRR (W/g)'], self.data['Temperature (K)'], initial=0) / self.Delta_q
         T = self.data['Temperature (K)'].values
         HRR = self.data['HRR (W/g)'].values
 
@@ -42,7 +43,7 @@ class Models:
             'disp': False
         }
 
-        result = minimize(self.loss_function, initial_guess, args=(T, HRR, Delta_q), bounds=bounds, method='TNC', options=options)
+        result = minimize(self.loss_function, initial_guess, args=(T, HRR, self.Delta_q), bounds=bounds, method='TNC', options=options)
 
         A_fitted, logEa_fitted, n_fitted, m_fitted, alpha_zv_fitted = result.x
         Ea_fitted = np.exp(logEa_fitted)
@@ -54,7 +55,8 @@ class Models:
     def draw(self):
         T = self.data['Temperature (K)'].values
         HRR = self.data['HRR (W/g)'].values
-        predicted_HRR = self.reaction_rate_model(self.coefs, T, HRR)
+        
+        predicted_HRR = self.reaction_rate_model(self.coefs, T, HRR,  self.Delta_q)
         # r2 = r2_score(HRR, predicted_HRR)
 
         plt.figure(figsize=(12, 6))
