@@ -2,13 +2,13 @@ import pandas as pd
 from scipy.integrate import cumtrapz
 import numpy as np
 from scipy.optimize import minimize
-
+import matplotlib.pyplot as plt
 
 class Models:
     def __init__(self, data: pd.DataFrame, heating_rate: float):
         self.data = data
         self.heating_rate = heating_rate
-
+        self.coefs = []
     def reaction_rate_model(self, params, T, HRR, Delta_q):
         A, logEa, n, m, alpha_zv = params
         Ea = np.exp(logEa)
@@ -33,8 +33,8 @@ class Models:
         T = self.data['Temperature (K)'].values
         HRR = self.data['HRR (W/g)'].values
 
-        initial_guess = [1, np.log(1e4), 1, 1, 0.3]
-        bounds = [(0.01, 10), (np.log(1000), np.log(20000)), (0, 5), (0, 5), (-1, 1)]
+        initial_guess = [1e11, np.log(1e4), 1, 1, 0.3]
+        bounds = [(1e10, 1e12), (np.log(4*1e3), np.log(4*1e5)), (0, 5), (0, 5), (-1, 1)]
 
         options = {
             'maxiter': 10000,
@@ -47,8 +47,25 @@ class Models:
         A_fitted, logEa_fitted, n_fitted, m_fitted, alpha_zv_fitted = result.x
         Ea_fitted = np.exp(logEa_fitted)
 
+        self.coefs = [A_fitted, logEa_fitted, n_fitted, m_fitted, alpha_zv_fitted]
+        
         return A_fitted, Ea_fitted, n_fitted, m_fitted, alpha_zv_fitted
+    
+    def draw(self):
+        T = self.data['Temperature (K)'].values
+        HRR = self.data['HRR (W/g)'].values
+        predicted_HRR = self.reaction_rate_model(self.coefs, T, HRR)
+        # r2 = r2_score(HRR, predicted_HRR)
 
+        plt.figure(figsize=(12, 6))
+        plt.scatter(self.data['Temperature (C)'], self.data['HRR (W/g)'], color='blue', label='Actual data')
+        plt.plot(self.data['Temperature (C)'], predicted_HRR, color='red', label='Fitted model')
+        # plt.text(x=min(experiment_data['Temperature (C)']), y=200, s=f"R2 (чем ближе к 1, тем лучше): {r2:.4f}", fontsize=12)
+        plt.xlabel('Temperature (°C)')
+        plt.ylabel('HRR (W/g)')
+        plt.title('Fit of Reaction Rate Model to Experimental Data')
+        plt.legend()
+        plt.show()
 
 if __name__ == "__main__":
     from back import FileProcessor
