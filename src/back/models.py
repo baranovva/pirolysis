@@ -1,3 +1,4 @@
+import matplotlib
 import pandas as pd
 from scipy.integrate import cumtrapz
 import numpy as np
@@ -31,7 +32,7 @@ class Models:
     loss_function(params: list, T: np.array, HRR: np.array, Delta_q: float) -> float
         Calculates the loss (sum of squared residuals) between the model predictions and the experimental data.
 
-    processing() -> tuple
+    processing() -> list
         Processes the experimental data, optimizes the model parameters, and fits the model to the data.
 
     draw()
@@ -51,7 +52,7 @@ class Models:
         self.coefs = None
         self.Delta_q = 0
 
-    def reaction_rate_model(self, params: list, T: np.array, HRR: np.array, Delta_q: float):
+    def reaction_rate_model(self, params: list, T: np.array, HRR: np.array, Delta_q: float) -> np.array:
         """
         Computes the predicted heat release rate based on the reaction rate model.
 
@@ -90,12 +91,12 @@ class Models:
         residuals = model_predictions - HRR
         return np.sum(residuals ** 2)
 
-    def processing(self) -> tuple:
+    def processing(self) -> list:
         """
        Processes the experimental data, optimizes the model parameters, and fits the model to the data.
 
        Returns:
-       tuple: Optimized parameters (A, Ea, n, m, alpha_zv).
+       list: Optimized parameters (A, Ea, n, m, alpha_zv).
        """
         beta = self.heating_rate
 
@@ -124,14 +125,14 @@ class Models:
 
         self.coefs = [A_fitted, logEa_fitted, n_fitted, m_fitted, alpha_zv_fitted]
 
-        return A_fitted, Ea_fitted, n_fitted, m_fitted, alpha_zv_fitted
+        return [A_fitted, Ea_fitted, n_fitted, m_fitted, alpha_zv_fitted]
 
-    def draw(self) -> None:
+    def draw(self) -> matplotlib.figure.Figure:
         """
         Plots the experimental data and the fitted model predictions.
 
         Returns:
-        None: Displays a plot.
+        Figure: Matplotlib figure object.
         """
         T = self.data['Temperature (K)'].values
         HRR = self.data['HRR (W/g)'].values
@@ -139,15 +140,16 @@ class Models:
         predicted_HRR = self.reaction_rate_model(self.coefs, T, HRR, self.Delta_q)
         # r2 = r2_score(HRR, predicted_HRR)
 
-        plt.figure(figsize=(12, 6))
-        plt.scatter(self.data['Temperature (C)'], self.data['HRR (W/g)'], color='blue', label='Actual data')
-        plt.plot(self.data['Temperature (C)'], predicted_HRR, color='red', label='Fitted model')
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.scatter(self.data['Temperature (C)'], self.data['HRR (W/g)'], color='blue', label='Actual data')
+        ax.plot(self.data['Temperature (C)'], predicted_HRR, color='red', label='Fitted model')
         # plt.text(x=min(experiment_data['Temperature (C)']), y=200, s=f"R2 (чем ближе к 1, тем лучше): {r2:.4f}", fontsize=12)
-        plt.xlabel('Temperature (°C)')
-        plt.ylabel('HRR (W/g)')
-        plt.title('Fit of Reaction Rate Model to Experimental Data')
-        plt.legend()
-        plt.show()
+        ax.set_xlabel('Temperature (°C)')
+        ax.set_ylabel('HRR (W/g)')
+        ax.legend()
+        ax.grid(True)
+
+        return fig
 
 
 if __name__ == "__main__":
