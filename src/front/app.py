@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, scrolledtext, Toplevel, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from typing import Union
+from tkinter import ttk
 
 from back import Models, FileProcessor
 
@@ -57,8 +58,13 @@ class App:
         self.header_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=70, height=9)
         self.header_text.pack(pady=10)
 
+        self.method_combobox = ttk.Combobox(root, values=["min", "ls", "dif"])
+        self.method_combobox.set("min")
+        self.method_combobox.pack(pady=5)
+
         self.processing_button = tk.Button(root, text="Обработать данные", command=self.processing, state=tk.DISABLED)
         self.processing_button.pack(pady=10)
+        
 
         self.result_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=70, height=5)
         self.result_text.pack(pady=10)
@@ -66,6 +72,7 @@ class App:
         self.plot_button = tk.Button(root, text="Показать график", command=self.plot_data)
         self.plot_button.pack(pady=10)
         self.plot_button.config(state=tk.DISABLED)
+
 
     def open_file(self) -> None:
         """
@@ -89,8 +96,9 @@ class App:
         Processes the loaded data using the Models class and displays the result in the result_text widget.
         """
         try:
+            method = self.method_combobox.get()
             self.models = Models(self.data_frame, self.heating_rate)
-            result = self.models.processing()
+            result = self.models.processing(method)
             if result:
                 result_str = f"A = {result[0]}\nEa = {result[1]}\nn = {result[2]}\nm = {result[3]}\nalpha = {result[4]}"
                 self.result_text.delete(1.0, tk.END)

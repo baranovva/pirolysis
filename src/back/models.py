@@ -2,7 +2,7 @@ import matplotlib
 import pandas as pd
 from scipy.integrate import cumtrapz
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import least_squares, differential_evolution, minimize
 import matplotlib.pyplot as plt
 
 
@@ -90,8 +90,25 @@ class Models:
         model_predictions = self.reaction_rate_model(params, T, HRR, Delta_q)
         residuals = model_predictions - HRR
         return np.sum(residuals ** 2)
+    
+    def residuals(self, params: list, T: np.array, HRR: np.array, Delta_q: float) -> float:
+        model_predictions = self.reaction_rate_model(params, T, HRR, Delta_q)
+        """
+        Computes the residuals between the model predictions and the experimental HRR data.
 
-    def processing(self) -> list:
+        Parameters:
+        params (list): List of model parameters [A, logEa, n, m, alpha_zv].
+        T (array): Array of temperature values (in Kelvin).
+        HRR (array): Array of experimental HRR values (in W/g).
+        Delta_q (float): The total heat released per gram during the experiment.
+
+
+        Returns:
+        np.array: Array of residuals (model predictions - experimental HRR).
+        """
+        return model_predictions - HRR
+    
+    def processing(self, method:str) -> list:
         """
        Processes the experimental data, optimizes the model parameters, and fits the model to the data.
 
@@ -107,19 +124,34 @@ class Models:
         T = self.data['Temperature (K)'].values
         HRR = self.data['HRR (W/g)'].values
 
-        initial_guess = [1e11, np.log(1e4), 1, 1, 0.3]
-        bounds = [(1e10, 1e12), (np.log(4 * 1e3), np.log(4 * 1e5)), (0, 5), (0, 5), (-1, 1)]
 
-        options = {
-            'maxiter': 10000,
-            'maxfun': 50000,
-            'disp': False
-        }
+        if method == "min":
+            initial_guess = [1e11, np.log(1e4), 1, 1, 0.3]
+            bounds = [(1e10, 1e12), (np.log(4 * 1e3), np.log(4 * 1e5)), (0, 5), (0, 5), (-1, 1)]
 
-        result = minimize(self.loss_function, initial_guess, args=(T, HRR, self.Delta_q), bounds=bounds, method='TNC',
-                          options=options
-                          )
+            options = {
+                'maxiter': 10000,
+                'maxfun': 50000,
+                'disp': False
+            }
 
+            result = minimize(self.loss_function, initial_guess, args=(T, HRR, self.Delta_q), bounds=bounds, method='TNC',
+                            options=options)
+        elif method == "ls":
+            initial_guess = [1e11, np.log(1e4), 1, 1, 0.3]
+
+            lower_bounds = [1e10, np.log(4 * 1e3), 0, 0, -1]
+            upper_bounds = [1e12, np.log(4 * 1e5), 5, 5, 1]
+            bounds_ls = (lower_bounds, upper_bounds)
+
+            result = least_squares(self.residuals, initial_guess, args=(T, HRR, self.Delta_q), bounds=bounds_ls)
+        elif method == "dif":
+            initial_guess = [1e11, np.log(1e4), 1, 1, 0.3]
+            bounds = [(1e10, 1e12), (np.log(4 * 1e3), np.log(4 * 1e5)), (0, 5), (0, 5), (-1, 1)]
+
+            result = differential_evolution(self.loss_function, bounds, args=(T, HRR, self.Delta_q))
+        else:
+            raise ValueError("Invalid optimization method selected.")
         A_fitted, logEa_fitted, n_fitted, m_fitted, alpha_zv_fitted = result.x
         Ea_fitted = np.exp(logEa_fitted)
 
