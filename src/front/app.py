@@ -44,6 +44,7 @@ class App:
         file_processor : FileProcessor or str
             An instance of the FileProcessor class for handling file operations.
         """
+        self.models = None
         self.data_frame = None
         self.heating_rate = None
 
@@ -64,7 +65,6 @@ class App:
 
         self.processing_button = tk.Button(root, text="Обработать данные", command=self.processing, state=tk.DISABLED)
         self.processing_button.pack(pady=10)
-        
 
         self.result_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=70, height=5)
         self.result_text.pack(pady=10)
@@ -72,7 +72,6 @@ class App:
         self.plot_button = tk.Button(root, text="Показать график", command=self.plot_data)
         self.plot_button.pack(pady=10)
         self.plot_button.config(state=tk.DISABLED)
-
 
     def open_file(self) -> None:
         """
@@ -88,7 +87,6 @@ class App:
             self.data_frame = self.file_processor.get_data_frame()
             self.heating_rate = self.file_processor.get_heating_rate()
 
-            # Activate the processing button once data is loaded
             self.processing_button.config(state=tk.NORMAL)
 
     def processing(self) -> None:

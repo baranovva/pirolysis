@@ -86,13 +86,12 @@ class Models:
 
         Returns:
         float: The loss value.
-       """
+        """
         model_predictions = self.reaction_rate_model(params, T, HRR, Delta_q)
         residuals = model_predictions - HRR
         return np.sum(residuals ** 2)
-    
+
     def residuals(self, params: list, T: np.array, HRR: np.array, Delta_q: float) -> float:
-        model_predictions = self.reaction_rate_model(params, T, HRR, Delta_q)
         """
         Computes the residuals between the model predictions and the experimental HRR data.
 
@@ -102,13 +101,13 @@ class Models:
         HRR (array): Array of experimental HRR values (in W/g).
         Delta_q (float): The total heat released per gram during the experiment.
 
-
         Returns:
         np.array: Array of residuals (model predictions - experimental HRR).
         """
+        model_predictions = self.reaction_rate_model(params, T, HRR, Delta_q)
         return model_predictions - HRR
-    
-    def processing(self, method:str) -> list:
+
+    def processing(self, method: str) -> list:
         """
         Processes the experimental data, optimizes the model parameters, and fits the model to the data.
 
@@ -127,7 +126,6 @@ class Models:
         T = self.data['Temperature (K)'].values
         HRR = self.data['HRR (W/g)'].values
 
-
         if method == "min":
             initial_guess = [1e11, np.log(1e4), 1, 1, 0.3]
             bounds = [(1e10, 1e12), (np.log(4 * 1e3), np.log(4 * 1e5)), (0, 5), (0, 5), (-1, 1)]
@@ -138,8 +136,10 @@ class Models:
                 'disp': False
             }
 
-            result = minimize(self.loss_function, initial_guess, args=(T, HRR, self.Delta_q), bounds=bounds, method='TNC',
-                            options=options)
+            result = minimize(self.loss_function, initial_guess, args=(T, HRR, self.Delta_q), bounds=bounds,
+                              method='TNC',
+                              options=options
+                              )
         elif method == "ls":
             initial_guess = [1e11, np.log(1e4), 1, 1, 0.3]
 
