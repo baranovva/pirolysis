@@ -76,16 +76,16 @@ class Models:
 
     def loss_function(self, params: list, T: np.array, HRR: np.array, Delta_q: float) -> float:
         """
-       Calculates the loss (sum of squared residuals) between the model predictions and the experimental data.
+        Calculates the loss (sum of squared residuals) between the model predictions and the experimental data.
 
-       Parameters:
-       params (list): List of model parameters [A, logEa, n, m, alpha_zv].
-       T (array): Array of temperature values (in Kelvin).
-       HRR (array): Array of experimental HRR values (in W/g).
-       Delta_q (float): The total heat released per gram during the experiment.
+        Parameters:
+        params (list): List of model parameters [A, logEa, n, m, alpha_zv].
+        T (array): Array of temperature values (in Kelvin).
+        HRR (array): Array of experimental HRR values (in W/g).
+        Delta_q (float): The total heat released per gram during the experiment.
 
-       Returns:
-       float: The loss value.
+        Returns:
+        float: The loss value.
        """
         model_predictions = self.reaction_rate_model(params, T, HRR, Delta_q)
         residuals = model_predictions - HRR
@@ -110,11 +110,14 @@ class Models:
     
     def processing(self, method:str) -> list:
         """
-       Processes the experimental data, optimizes the model parameters, and fits the model to the data.
+        Processes the experimental data, optimizes the model parameters, and fits the model to the data.
 
-       Returns:
-       list: Optimized parameters (A, Ea, n, m, alpha_zv).
-       """
+        Parameters:
+        method (str): The string for optimization method to choose.
+
+        Returns:
+        list: Optimized parameters (A, Ea, n, m, alpha_zv).
+        """
         beta = self.heating_rate
 
         self.data['Temperature (K)'] = self.data['Temperature (C)'] + 273.15
