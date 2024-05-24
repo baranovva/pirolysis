@@ -108,7 +108,7 @@ class Models:
         """
         return model_predictions - HRR
     
-    def processing(self, method:str) -> list:
+    def processing(self, method:str, bounds, initial_guess) -> list:
         """
         Processes the experimental data, optimizes the model parameters, and fits the model to the data.
 
@@ -128,31 +128,27 @@ class Models:
         HRR = self.data['HRR (W/g)'].values
 
 
+
         if method == "min":
-            initial_guess = [1e11, np.log(1e4), 1, 1, 0.3]
-            bounds = [(1e10, 1e12), (np.log(4 * 1e3), np.log(4 * 1e5)), (0, 5), (0, 5), (-1, 1)]
+            bounds_list = [bounds['A'], bounds['logEa'], bounds['n'], bounds['m'], bounds['alpha_zv']]
 
             options = {
                 'maxiter': 10000,
                 'maxfun': 50000,
                 'disp': False
             }
-
-            result = minimize(self.loss_function, initial_guess, args=(T, HRR, self.Delta_q), bounds=bounds, method='TNC',
+            result = minimize(self.loss_function, initial_guess, args=(T, HRR, self.Delta_q), bounds=bounds_list, method='TNC',
                             options=options)
         elif method == "ls":
-            initial_guess = [1e11, np.log(1e4), 1, 1, 0.3]
-
-            lower_bounds = [1e10, np.log(4 * 1e3), 0, 0, -1]
-            upper_bounds = [1e12, np.log(4 * 1e5), 5, 5, 1]
+            lower_bounds = [bounds['A'][0], bounds['logEa'][0], bounds['n'][0], bounds['m'][0], bounds['alpha_zv'][0]]
+            upper_bounds = [bounds['A'][1], bounds['logEa'][1], bounds['n'][1], bounds['m'][1], bounds['alpha_zv'][1]]
             bounds_ls = (lower_bounds, upper_bounds)
 
             result = least_squares(self.residuals, initial_guess, args=(T, HRR, self.Delta_q), bounds=bounds_ls)
         elif method == "dif":
-            initial_guess = [1e11, np.log(1e4), 1, 1, 0.3]
-            bounds = [(1e10, 1e12), (np.log(4 * 1e3), np.log(4 * 1e5)), (0, 5), (0, 5), (-1, 1)]
+            bounds_list = [bounds['A'], bounds['logEa'], bounds['n'], bounds['m'], bounds['alpha_zv']]
 
-            result = differential_evolution(self.loss_function, bounds, args=(T, HRR, self.Delta_q))
+            result = differential_evolution(self.loss_function, bounds_list, args=(T, HRR, self.Delta_q))
         else:
             raise ValueError("Invalid optimization method selected.")
         A_fitted, logEa_fitted, n_fitted, m_fitted, alpha_zv_fitted = result.x
