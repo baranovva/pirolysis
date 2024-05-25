@@ -20,14 +20,20 @@ class App:
 
     Methods:
     --------
-    __init__(self, root, file_processor)
-        Initializes the App with the window.
+    __init__(self, root: tk.Tk, file_processor: Union[str, FileProcessor])
+        Initializes the App with the window and sets up the GUI components.
 
-    open_file(self)
+    toggle_custom_params(self)
+        Toggles the visibility of the custom parameters frame.
+
+    open_file(self) -> None
         Opens a file dialog to select a file, reads the header and data, and displays the header.
 
-    processing(self)
-        Processes the loaded data using the Models class and displays the result in a new window.
+    get_custom_bounds_and_initials(self) -> tuple
+        Retrieves custom bounds and initial conditions from the GUI inputs.
+
+    processing(self) -> None
+        Processes the loaded data using the Models class and displays the result in the result_text widget.
 
     plot_data(self)
         Plots the processed data if available.
@@ -55,15 +61,17 @@ class App:
         self.open_button = tk.Button(root, text="Открыть файл", command=self.open_file)
         self.open_button.pack(pady=10)
 
-        self.header_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=70, height=9)
+        self.header_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=60, height=9)
         self.header_text.pack(pady=10)
 
-        self.method_combobox = ttk.Combobox(root, values=["min", "ls", "dif"])
-        self.method_combobox.set("min")
+        self.method_combobox = ttk.Combobox(root, values=["minimize", "least squares", "differential evolution"])
+        self.method_combobox.set("minimize")
         self.method_combobox.pack(pady=5)
 
         self.custom_params_frame_visible = False
-        self.toggle_button = tk.Button(root, text="Show Custom Parameters", command=self.toggle_custom_params)
+        self.toggle_button = tk.Button(root, text="Показать дополнительные параметры",
+                                       command=self.toggle_custom_params
+                                       )
         self.toggle_button.pack(pady=5)
 
         self.custom_params_frame = tk.Frame(root)
@@ -94,34 +102,37 @@ class App:
             initial_entry.insert(0, default_initials[i])
 
             self.initial_entries[label] = initial_entry
-        
+
         self.custom_params_frame.pack_forget()
         self.processing_button = tk.Button(root, text="Обработать данные", command=self.processing, state=tk.DISABLED)
         self.processing_button.pack(pady=10)
-        
 
-        self.result_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=70, height=5)
+        self.result_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=30, height=5)
         self.result_text.pack(pady=10)
 
         self.plot_button = tk.Button(root, text="Показать график", command=self.plot_data)
         self.plot_button.pack(pady=10)
         self.plot_button.config(state=tk.DISABLED)
 
-    def toggle_custom_params(self):
+    def toggle_custom_params(self) -> None:
         """
         Toggles the visibility of the custom_params_frame.
+
+        Returns: None
         """
         if self.custom_params_frame_visible:
             self.custom_params_frame.pack_forget()
-            self.toggle_button.config(text="Show Custom Parameters")
+            self.toggle_button.config(text="Показать дополнительные параметры")
         else:
             self.custom_params_frame.pack(pady=5, before=self.processing_button)
-            self.toggle_button.config(text="Hide Custom Parameters")
+            self.toggle_button.config(text="Скрыть дополнительные параметры")
         self.custom_params_frame_visible = not self.custom_params_frame_visible
 
     def open_file(self) -> None:
         """
         Opens a file dialog to select a file, reads the header and data, and displays the header.
+
+        Returns: None
         """
         file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
         if file_path:
@@ -132,8 +143,6 @@ class App:
 
             self.data_frame = self.file_processor.get_data_frame()
             self.heating_rate = self.file_processor.get_heating_rate()
-
-            # Activate the processing button once data is loaded
             self.processing_button.config(state=tk.NORMAL)
 
     def get_custom_bounds_and_initials(self) -> tuple:
@@ -141,7 +150,9 @@ class App:
         Retrieves custom bounds and initial conditions from the GUI inputs.
 
         Returns:
-        tuple: Dictionary containing custom bounds and list of initial conditions.
+        --------
+        tuple
+            Dictionary containing custom bounds and list of initial conditions.
         """
         custom_bounds = {}
         custom_initials = []
@@ -151,15 +162,17 @@ class App:
         for param, initial_entry in self.initial_entries.items():
             custom_initials.append(float(initial_entry.get()))
 
-        custom_initials[1]= np.log(custom_initials[1])
+        custom_initials[1] = np.log(custom_initials[1])
         custom_bounds['logEa'] = (np.log(custom_bounds['Ea'][0]), np.log(custom_bounds['Ea'][1]))
         custom_bounds['A'] = (custom_bounds['A'][0], custom_bounds['A'][1])
 
         return custom_bounds, custom_initials
-    
+
     def processing(self) -> None:
         """
         Processes the loaded data using the Models class and displays the result in the result_text widget.
+
+        Returns: None
         """
         try:
             method = self.method_combobox.get()
@@ -177,9 +190,11 @@ class App:
         except ValueError as e:
             tk.messagebox.showinfo("Ошибка", str(e))
 
-    def plot_data(self):
+    def plot_data(self) -> None:
         """
         Plots the processed data if available.
+
+        Returns: None
         """
         if hasattr(self, 'models') and self.models.coefs is not None:
             plot_window = tk.Toplevel(self.root)
