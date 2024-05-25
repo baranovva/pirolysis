@@ -58,23 +58,6 @@ scipy.optimize.differential_evolution - метод, используемый в 
 
 `gui.py`: Содержит класс `App` для графического интерфейса пользователя.
 
-pirolysis/
-├── .gitignore
-├── LICENSE
-├── README.md
-├── main.py
-├── main.spec
-├── requirements.txt
-└── src/
-    ├── __init__.py
-    ├── back/
-    │   ├── __init__.py
-    │   ├── models.py
-    │   └── open_file.py
-    └── front/
-        ├── __init__.py
-    	└── app.py
-
-
+![image](https://github.com/baranovva/pirolysis/assets/170364565/62982e8b-5086-464f-832e-9eda2f0ca9a7)
 
 
