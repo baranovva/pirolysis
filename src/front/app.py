@@ -50,6 +50,7 @@ class App:
         file_processor : FileProcessor or str
             An instance of the FileProcessor class for handling file operations.
         """
+        self.models = None
         self.data_frame = None
         self.heating_rate = None
 
@@ -127,7 +128,7 @@ class App:
             self.custom_params_frame.pack(pady=5, before=self.processing_button)
             self.toggle_button.config(text="Скрыть дополнительные параметры")
         self.custom_params_frame_visible = not self.custom_params_frame_visible
-
+        
     def open_file(self) -> None:
         """
         Opens a file dialog to select a file, reads the header and data, and displays the header.

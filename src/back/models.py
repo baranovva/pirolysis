@@ -163,7 +163,7 @@ class Models:
 
         if method == "minimize":
             bounds_list = [bounds['A'], bounds['logEa'], bounds['n'], bounds['m'], bounds['alpha_zv']]
-
+                           
             options = {
                 'maxiter': 10000,
                 'maxfun': 50000,
