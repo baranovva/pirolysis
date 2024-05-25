@@ -32,6 +32,9 @@ class Models:
     loss_function(params: list, T: np.array, HRR: np.array, Delta_q: float) -> float
         Calculates the loss (sum of squared residuals) between the model predictions and the experimental data.
 
+    residuals(params: list, T: np.array, HRR: np.array, Delta_q: float) -> np.array
+        Computes the residuals between the model predictions and the experimental HRR data.
+
     processing() -> list
         Processes the experimental data, optimizes the model parameters, and fits the model to the data.
 
@@ -44,8 +47,11 @@ class Models:
         Initializes the Models class with experimental data and heating rate.
 
         Parameters:
-        data (pd.DataFrame): Experimental data containing 'Temperature (C)' and 'HRR (W/g)' columns.
-        heating_rate (float): Heating rate in K/min.
+        -----------
+        data : pd.DataFrame
+            Experimental data containing 'Temperature (C)' and 'HRR (W/g)' columns.
+        heating_rate : float
+            Heating rate in К/min.
         """
         self.data = data
         self.heating_rate = heating_rate
@@ -57,13 +63,20 @@ class Models:
         Computes the predicted heat release rate based on the reaction rate model.
 
         Parameters:
-        params (list): List of model parameters [A, logEa, n, m, alpha_zv].
-        T (array): Array of temperature values (in Kelvin).
-        HRR (array): Array of experimental HRR values (in W/g).
-        Delta_q (float): The total heat released per gram during the experiment.
+        -----------
+        params : list
+            List of model parameters [A, logEa, n, m, alpha_zv].
+        T : np.array
+            Array of temperature values (in Kelvin).
+        HRR : np.array
+            Array of experimental HRR values (in W/g).
+        Delta_q : float
+            The total heat released per gram during the experiment.
 
         Returns:
-        array: The predicted heat release rate.
+        --------
+        np.array
+            The predicted heat release rate.
         """
         A, logEa, n, m, alpha_zv = params
         Ea = np.exp(logEa)
@@ -79,13 +92,20 @@ class Models:
         Calculates the loss (sum of squared residuals) between the model predictions and the experimental data.
 
         Parameters:
-        params (list): List of model parameters [A, logEa, n, m, alpha_zv].
-        T (array): Array of temperature values (in Kelvin).
-        HRR (array): Array of experimental HRR values (in W/g).
-        Delta_q (float): The total heat released per gram during the experiment.
+        -----------
+        params : list
+            List of model parameters [A, logEa, n, m, alpha_zv].
+        T : np.array
+            Array of temperature values (in Kelvin).
+        HRR : np.array
+            Array of experimental HRR values (in W/g).
+        Delta_q : float
+            The total heat released per gram during the experiment.
 
         Returns:
-        float: The loss value.
+        --------
+        float
+            The loss value.
         """
         model_predictions = self.reaction_rate_model(params, T, HRR, Delta_q)
         residuals = model_predictions - HRR
@@ -96,26 +116,41 @@ class Models:
         Computes the residuals between the model predictions and the experimental HRR data.
 
         Parameters:
-        params (list): List of model parameters [A, logEa, n, m, alpha_zv].
-        T (array): Array of temperature values (in Kelvin).
-        HRR (array): Array of experimental HRR values (in W/g).
-        Delta_q (float): The total heat released per gram during the experiment.
+        -----------
+        params : list
+            List of model parameters [A, logEa, n, m, alpha_zv].
+        T : np.array
+            Array of temperature values (in Kelvin).
+        HRR : np.array
+            Array of experimental HRR values (in W/g).
+        Delta_q : float
+            The total heat released per gram during the experiment.
 
         Returns:
-        np.array: Array of residuals (model predictions - experimental HRR).
+        --------
+        np.array
+            Array of residuals (model predictions - experimental HRR).
         """
         model_predictions = self.reaction_rate_model(params, T, HRR, Delta_q)
         return model_predictions - HRR
 
-    def processing(self, method: str) -> list:
+    def processing(self, method: str, bounds: dict, initial_guess: list) -> list:
         """
         Processes the experimental data, optimizes the model parameters, and fits the model to the data.
 
         Parameters:
-        method (str): The string for optimization method to choose.
+        -----------
+        method : str
+            The string for optimization method to choose. Options are "minimize", "least squares", and "differential evolution".
+        bounds : dict
+            Dictionary containing the bounds for each parameter in the form {'param': (min, max)}.
+        initial_guess : list
+            Initial guess for the model parameters.
 
         Returns:
-        list: Optimized parameters (A, Ea, n, m, alpha_zv).
+        --------
+        list
+            Optimized parameters [A, Ea, n, m, alpha_zv].
         """
         beta = self.heating_rate
 
@@ -126,33 +161,28 @@ class Models:
         T = self.data['Temperature (K)'].values
         HRR = self.data['HRR (W/g)'].values
 
-        if method == "min":
-            initial_guess = [1e11, np.log(1e4), 1, 1, 0.3]
-            bounds = [(1e10, 1e12), (np.log(4 * 1e3), np.log(4 * 1e5)), (0, 5), (0, 5), (-1, 1)]
-
+        if method == "minimize":
+            bounds_list = [bounds['A'], bounds['logEa'], bounds['n'], bounds['m'], bounds['alpha_zv']]
+                           
             options = {
                 'maxiter': 10000,
                 'maxfun': 50000,
                 'disp': False
             }
-
-            result = minimize(self.loss_function, initial_guess, args=(T, HRR, self.Delta_q), bounds=bounds,
+            result = minimize(self.loss_function, initial_guess, args=(T, HRR, self.Delta_q), bounds=bounds_list,
                               method='TNC',
                               options=options
                               )
-        elif method == "ls":
-            initial_guess = [1e11, np.log(1e4), 1, 1, 0.3]
-
-            lower_bounds = [1e10, np.log(4 * 1e3), 0, 0, -1]
-            upper_bounds = [1e12, np.log(4 * 1e5), 5, 5, 1]
+        elif method == "least squares":
+            lower_bounds = [bounds['A'][0], bounds['logEa'][0], bounds['n'][0], bounds['m'][0], bounds['alpha_zv'][0]]
+            upper_bounds = [bounds['A'][1], bounds['logEa'][1], bounds['n'][1], bounds['m'][1], bounds['alpha_zv'][1]]
             bounds_ls = (lower_bounds, upper_bounds)
 
             result = least_squares(self.residuals, initial_guess, args=(T, HRR, self.Delta_q), bounds=bounds_ls)
-        elif method == "dif":
-            initial_guess = [1e11, np.log(1e4), 1, 1, 0.3]
-            bounds = [(1e10, 1e12), (np.log(4 * 1e3), np.log(4 * 1e5)), (0, 5), (0, 5), (-1, 1)]
+        elif method == "differential evolution":
+            bounds_list = [bounds['A'], bounds['logEa'], bounds['n'], bounds['m'], bounds['alpha_zv']]
 
-            result = differential_evolution(self.loss_function, bounds, args=(T, HRR, self.Delta_q))
+            result = differential_evolution(self.loss_function, bounds_list, args=(T, HRR, self.Delta_q))
         else:
             raise ValueError("Invalid optimization method selected.")
         A_fitted, logEa_fitted, n_fitted, m_fitted, alpha_zv_fitted = result.x
@@ -167,18 +197,17 @@ class Models:
         Plots the experimental data and the fitted model predictions.
 
         Returns:
-        Figure: Matplotlib figure object.
+        --------
+        matplotlib.figure.Figure
+            Matplotlib figure object.
         """
         T = self.data['Temperature (K)'].values
         HRR = self.data['HRR (W/g)'].values
-
         predicted_HRR = self.reaction_rate_model(self.coefs, T, HRR, self.Delta_q)
-        # r2 = r2_score(HRR, predicted_HRR)
 
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.scatter(self.data['Temperature (C)'], self.data['HRR (W/g)'], color='blue', label='Actual data')
         ax.plot(self.data['Temperature (C)'], predicted_HRR, color='red', label='Fitted model')
-        # plt.text(x=min(experiment_data['Temperature (C)']), y=200, s=f"R2 (чем ближе к 1, тем лучше): {r2:.4f}", fontsize=12)
         ax.set_xlabel('Temperature (°C)')
         ax.set_ylabel('HRR (W/g)')
         ax.legend()
