@@ -56,7 +56,7 @@ scipy.optimize.differential_evolution - метод, используемый в 
 
 `file_processor.py`: Содержит класс `FileProcessor` для чтения и обработки файлов данных.
 
-`gui.py`: Содержит класс `App` для графического интерфейса пользователя.
+`app.py`: Содержит класс `App` для графического интерфейса пользователя.
 
 ![image](https://github.com/baranovva/pirolysis/assets/170364565/62982e8b-5086-464f-832e-9eda2f0ca9a7)
 
