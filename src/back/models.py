@@ -1,9 +1,9 @@
 import matplotlib
-import pandas as pd
-from scipy.integrate import cumtrapz
-import numpy as np
-from scipy.optimize import least_squares, differential_evolution, minimize
 import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+from scipy.integrate import cumtrapz
+from scipy.optimize import least_squares, differential_evolution, minimize
 
 
 class Models:
@@ -16,7 +16,7 @@ class Models:
         Experimental data containing 'Temperature (C)' and 'HRR (W/g)' columns.
     heating_rate : float
         Heating rate in С/s.
-    coefs : list or None
+    optimized_parameters : list or None
         List of optimized model parameters after fitting.
     Delta_q : float
         The total heat released per gram during the experiment.
@@ -35,10 +35,10 @@ class Models:
     residuals(params: list, T: np.array, HRR: np.array, Delta_q: float) -> np.array
         Computes the residuals between the model predictions and the experimental HRR data.
 
-    processing() -> list
+    process(method: str, bounds: dict, initial_guess: list) -> list
         Processes the experimental data, optimizes the model parameters, and fits the model to the data.
 
-    draw()
+    draw() -> matplotlib.figure.Figure
         Plots the experimental data and the fitted model predictions.
     """
 
@@ -55,7 +55,7 @@ class Models:
         """
         self.data = data
         self.heating_rate = heating_rate
-        self.coefs = None
+        self.optimized_parameters = None
         self.Delta_q = 0
 
     def reaction_rate_model(self, params: list, T: np.array, HRR: np.array, Delta_q: float) -> np.array:
@@ -163,7 +163,7 @@ class Models:
 
         if method == "minimize":
             bounds_list = [bounds['A'], bounds['logEa'], bounds['n'], bounds['m'], bounds['alpha_zv']]
-                           
+
             options = {
                 'maxiter': 10000,
                 'maxfun': 50000,
@@ -188,7 +188,7 @@ class Models:
         A_fitted, logEa_fitted, n_fitted, m_fitted, alpha_zv_fitted = result.x
         Ea_fitted = np.exp(logEa_fitted)
 
-        self.coefs = [A_fitted, logEa_fitted, n_fitted, m_fitted, alpha_zv_fitted]
+        self.optimized_parameters = [A_fitted, logEa_fitted, n_fitted, m_fitted, alpha_zv_fitted]
 
         return [A_fitted, Ea_fitted, n_fitted, m_fitted, alpha_zv_fitted]
 
@@ -203,7 +203,7 @@ class Models:
         """
         T = self.data['Temperature (K)'].values
         HRR = self.data['HRR (W/g)'].values
-        predicted_HRR = self.reaction_rate_model(self.coefs, T, HRR, self.Delta_q)
+        predicted_HRR = self.reaction_rate_model(self.optimized_parameters, T, HRR, self.Delta_q)
 
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.scatter(self.data['Temperature (C)'], self.data['HRR (W/g)'], color='blue', label='Actual data')

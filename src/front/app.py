@@ -197,7 +197,7 @@ class App:
 
         Returns: None
         """
-        if hasattr(self, 'models') and self.models.coefs is not None:
+        if hasattr(self, 'models') and self.models.optimized_parameters is not None:
             plot_window = tk.Toplevel(self.root)
             plot_window.title("График")
             plot_window.geometry("800x600+200+200")
